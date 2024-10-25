@@ -29,7 +29,7 @@ const BlackScreen = styled.div`
 const LogoImage = styled.img`
   width: 300px;
   height: 300px;
-  opacity: 1; // Başlangıçta resim görünür olmalı
+  opacity: 1; 
 `;
 
 const Container = styled.div`

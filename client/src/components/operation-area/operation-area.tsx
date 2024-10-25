@@ -25,7 +25,7 @@ interface Window {
   windowType: string;
   xPosition: number;
   yPosition: number;
-  connections: Array<{ id: string; type: 'start' | 'end' }>;
+  connections: Array<{ id: string; type: "start" | "end" }>;
 }
 interface Line {
   startX: number;
@@ -55,7 +55,7 @@ const ContentArea = styled.div`
   position: relative;
 `;
 
-const ConnectionPoint = styled.div<{ type: 'top' | 'bottom' }>`
+const ConnectionPoint = styled.div<{ type: "top" | "bottom" }>`
   position: absolute;
   width: 7px;
   height: 7px;
@@ -64,7 +64,7 @@ const ConnectionPoint = styled.div<{ type: 'top' | 'bottom' }>`
   cursor: pointer;
   transform: translate(-50%, -50%);
   left: 50%;
-  top: ${(props) => (props.type === 'top' ? 0 : '100%')};
+  top: ${(props) => (props.type === "top" ? 0 : "100%")};
 
   &:hover {
     background-color: #888;
@@ -120,10 +120,8 @@ const OperationArea = () => {
   const [selectedWindowId, setSelectedWindowId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
-  const [linePool, setLinePool] = useState<Line[]>([])
+  const [linePool, setLinePool] = useState<Line[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-
-
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -142,6 +140,15 @@ const OperationArea = () => {
     setWindowPool((prevWindows) =>
       prevWindows.filter((window) => window.id !== id)
     );
+    setLinePool((prevLines) =>
+      prevLines.filter(
+        (line) => line.startWindowId !== id && line.endWindowId !== id
+      )
+    );
+    setTimeout(() => {
+      setCurrentLine(null);
+      document.body.style.cursor = "default";
+    }, 100);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -165,7 +172,6 @@ const OperationArea = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    
     if (isDrawing && currentLine) {
       setCurrentLine({
         ...currentLine,
@@ -180,56 +186,105 @@ const OperationArea = () => {
     if (index === -1) return;
 
     const updatedWindows = [...windowPool];
-    updatedWindows[index] = {
+    const updatedWindow = {
       ...updatedWindows[index],
       xPosition: e.clientX - e.currentTarget.getBoundingClientRect().left,
       yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top,
     };
+    updatedWindows[index] = updatedWindow;
     setWindowPool(updatedWindows);
+
+    setLinePool((prevLines) =>
+      prevLines.map((line) => {
+        if (line.startWindowId === selectedWindowId) {
+          return {
+            ...line,
+            startX: updatedWindow.xPosition + 80,
+            startY: updatedWindow.yPosition + 80,
+          };
+        } else if (line.endWindowId === selectedWindowId) {
+          return {
+            ...line,
+            endX: updatedWindow.xPosition + 80,
+            endY: updatedWindow.yPosition,
+          };
+        }
+        return line;
+      })
+    );
+    setTimeout(() => {
+      setCurrentLine(null);
+      document.body.style.cursor = "default";
+    }, 100);
   };
 
   const handleMouseUp = () => {
     setDragging(false);
-    
   };
 
-
-
-  const handleConnectStart = (windowId: string, type: 'top' | 'bottom', e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDrawing) {  
-      const window = windowPool.find(w => w.id === windowId);
+  useEffect(() => {
+    console.log(linePool);
+  }, [linePool]);
+  const handleConnectStart = (
+    windowId: string,
+    type: "top" | "bottom",
+    e: React.MouseEvent<HTMLDivElement>
+  ) => {
+    if (!isDrawing) {
+      const window = windowPool.find((w) => w.id === windowId);
       if (!window) return;
-    
-      const offset = type === 'top' ? 0 : 80; 
+
+      const offset = type === "top" ? 0 : 80;
 
       const newLine: Line = {
         startX: window.xPosition + 80,
         startY: window.yPosition + offset,
         endX: e.clientX,
         endY: e.clientY,
-        startWindowId: windowId
-      }
+        startWindowId: windowId,
+      };
 
       setCurrentLine(newLine);
 
       setIsDrawing(true);
-      
     }
   };
 
-  const handleConnectEnd = (windowId: string, type: 'top' | 'bottom') => {
-    if (isDrawing && currentLine && currentLine.startWindowId !== windowId) { // Prevent connecting to the same window
-      const window = windowPool.find(w => w.id === windowId);
+  const handleConnectEnd = (windowId: string, type: "top" | "bottom") => {
+    if (isDrawing && currentLine && currentLine.startWindowId !== windowId) {
+      const window = windowPool.find((w) => w.id === windowId);
       if (!window) return;
-      console.log(windowId)
-      setCurrentLine({
+
+      const updatedLine = {
         ...currentLine,
-        endWindowId: windowId
-      });
-  
+        endWindowId: windowId,
+      };
+
+      const duplicateLine = linePool.some(
+        (line) =>
+          line.startWindowId === updatedLine.startWindowId &&
+          line.endWindowId === updatedLine.endWindowId
+      );
+      console.log(duplicateLine);
+      if (duplicateLine) {
+        console.log("Duplicate line detected, not adding to linePool.");
+        setIsDrawing(false);
+        setCurrentLine(null);
+        setTimeout(() => {
+          setCurrentLine(null);
+          document.body.style.cursor = "default";
+        }, 100);
+
+        return;
+      }
+
+      setCurrentLine(updatedLine);
       setIsDrawing(false);
-      console.log('currentLinebura', currentLine)
-     
+
+      setLinePool((prevLines) => [...prevLines, updatedLine]);
+      console.log("Line added to linePool:", updatedLine);
+      console.log(linePool);
+      setCurrentLine(null);
     }
   };
 
@@ -241,13 +296,12 @@ const OperationArea = () => {
       onDrop={handleDrop}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      
     >
       <ContentArea style={{ transform: `scale(${zoom})` }}>
         {windowPool.map((window) => (
           <WindowContainer
             key={window.id}
-            bgColor={colorMapping[window.icon] || 'grey'}
+            bgColor={colorMapping[window.icon] || "grey"}
             style={{
               left: window.xPosition,
               top: window.yPosition,
@@ -260,11 +314,56 @@ const OperationArea = () => {
             <DeleteWindowButton onClick={() => handleDeleteWindow(window.id)}>
               X
             </DeleteWindowButton>
-            <ConnectionPoint type="top" onMouseEnter={() => handleConnectEnd(window.id, 'top')} />
-            <ConnectionPoint type="bottom" onClick={(e) => handleConnectStart(window.id, 'bottom', e)} />
+            <ConnectionPoint
+              type="top"
+              onMouseEnter={() => handleConnectEnd(window.id, "top")}
+            />
+            <ConnectionPoint
+              type="bottom"
+              onClick={(e) => handleConnectStart(window.id, "bottom", e)}
+            />
           </WindowContainer>
-        ))}  {currentLine && (
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        ))}
+
+        <svg
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        >
+       
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="10"
+              refY="3.5"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+            </marker>
+          </defs>
+
+     
+          {linePool.map((line, index) => (
+            <line
+              key={index}
+              x1={line.startX}
+              y1={line.startY}
+              x2={line.endX}
+              y2={line.endY}
+              stroke="black"
+              strokeWidth="2"
+              markerEnd="url(#arrowhead)"
+            />
+          ))}
+
+          {currentLine && (
             <line
               x1={currentLine.startX}
               y1={currentLine.startY}
@@ -272,9 +371,10 @@ const OperationArea = () => {
               y2={currentLine.endY}
               stroke="black"
               strokeWidth="2"
+              markerEnd="url(#arrowhead)" 
             />
-          </svg>
-        )}
+          )}
+        </svg>
       </ContentArea>
     </DropArea>
   );

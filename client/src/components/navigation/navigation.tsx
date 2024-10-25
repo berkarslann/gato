@@ -35,11 +35,11 @@ const Panel = styled.div`
   border: 1px solid #ddd;
   margin-top: 15px;
   border-radius: 8px;
-  position: absolute; /* NavBar'ın altında görünmesi için absolute konumlandırma */
-  right: 20px; /* Panelin butonla hizalanması için sağa hizalama */
-  top: 8rem; /* Panelin, butonun hemen altında görünmesi için üstten boşluk */
+  position: absolute; 
+  right: 20px; 
+  top: 8rem; 
   width: 300px;
-  z-index: 999; /* Üstte görünmesi için z-index ayarı */
+  z-index: 999; 
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
 const ProfilePanel = styled.div`
@@ -48,12 +48,12 @@ const ProfilePanel = styled.div`
   border: 1px solid #ddd;
   margin-top: 15px;
   border-radius: 8px;
-  position: absolute; /* NavBar'ın altında görünmesi için absolute konumlandırma */
-  left: 20px; /* Panelin butonla hizalanması için sağa hizalama */
-  top: 8rem; /* Panelin, butonun hemen altında görünmesi için üstten boşluk */
+  position: absolute; 
+  left: 20px;
+  top: 8rem;
   width: 300px;
   height:100px;
-  z-index: 999; /* Üstte görünmesi için z-index ayarı */
+  z-index: 999; 
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
 
@@ -68,14 +68,14 @@ const ProfileSection = styled.div`
 
 const ProfilePhoto = styled.img`
   width: 50px;
-  height: 50px; // Resmin yüksekliği
-  border-radius: 50%; // Yuvarlak köşeler için
-  object-fit: cover; // Resmin boyutlarını koruyarak kapsayıcıya sığdır
-  border: 2px solid transparent; // Başlangıçta sınırı saydam yap
-  transition: border-color 0.3s ease; // Sınır rengi değişiminde animasyon
+  height: 50px; 
+  border-radius: 50%; 
+  object-fit: cover; 
+  border: 2px solid transparent; 
+  transition: border-color 0.3s ease; 
 
   &:hover {
-    border-color: #fff; // Hover durumunda sınır rengini beyaza çevir
+    border-color: #fff; 
   }
 `;
 
