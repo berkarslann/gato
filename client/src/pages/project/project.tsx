@@ -21,15 +21,16 @@ const MainContainer = styled.div`
   width: 100%;
   position: sticky;
 `;
-const DashboardPage: React.FC = () => {
+const ProjectPage: React.FC = () => {
   return (
     <Container>
+      <Navigation />
       <MainContainer>
         <WindowManager />
-      
+        <OperationArea />
       </MainContainer>
     </Container>
   );
 };
 
-export default DashboardPage;
+export default ProjectPage;

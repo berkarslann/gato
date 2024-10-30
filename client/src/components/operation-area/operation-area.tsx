@@ -4,6 +4,10 @@ import { GrResources } from "react-icons/gr";
 import { GoNorthStar } from "react-icons/go";
 import { AiOutlineBranches } from "react-icons/ai";
 import { IoDocumentTextOutline } from "react-icons/io5";
+import SourceWindow from "../source-window/source-window";
+import ActionWindow from "../action-window/action-window";
+import ComputeWindow from "../compute-window/compute-window";
+import OutputWindow from "../output-window/output-window";
 
 const colorMapping: Record<string, string> = {
   source: "rgba(255, 165, 0, 0.7)",
@@ -122,6 +126,7 @@ const OperationArea = () => {
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
   const [linePool, setLinePool] = useState<Line[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -222,9 +227,6 @@ const OperationArea = () => {
     setDragging(false);
   };
 
-  useEffect(() => {
-    console.log(linePool);
-  }, [linePool]);
   const handleConnectStart = (
     windowId: string,
     type: "top" | "bottom",
@@ -288,6 +290,26 @@ const OperationArea = () => {
     }
   };
 
+  const handleWindowComponent = (windowType: string) => {
+    setSelectedWindow(windowType);
+  };
+
+  const renderSelectedWindow = () => {
+    switch (selectedWindow) {
+      case "source":
+        return <SourceWindow onClose={() => setSelectedWindow(null)} />;
+      case "compute":
+        return <ComputeWindow onClose={() => setSelectedWindow(null)} />;
+      case "action":
+        return <ActionWindow onClose={() => setSelectedWindow(null)} />;
+      case "output":
+        return <OutputWindow onClose={() => setSelectedWindow(null)} />;
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <DropArea
       style={{ backgroundSize: `${20 / zoom}px ${20 / zoom}px` }}
@@ -307,11 +329,17 @@ const OperationArea = () => {
               top: window.yPosition,
             }}
             onMouseDown={(e) => handleMouseDown(e, window.id)}
+            onClick={() => handleWindowComponent(window.windowType)}
           >
             <WindowTypeIcon>
               {windowIconMapping[window.windowType]}
             </WindowTypeIcon>
-            <DeleteWindowButton onClick={() => handleDeleteWindow(window.id)}>
+            <DeleteWindowButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteWindow(window.id);
+              }}
+            >
               X
             </DeleteWindowButton>
             <ConnectionPoint
@@ -320,7 +348,10 @@ const OperationArea = () => {
             />
             <ConnectionPoint
               type="bottom"
-              onClick={(e) => handleConnectStart(window.id, "bottom", e)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConnectStart(window.id, "bottom", e);
+              }}
             />
           </WindowContainer>
         ))}
@@ -335,7 +366,6 @@ const OperationArea = () => {
             pointerEvents: "none",
           }}
         >
-       
           <defs>
             <marker
               id="arrowhead"
@@ -349,7 +379,6 @@ const OperationArea = () => {
             </marker>
           </defs>
 
-     
           {linePool.map((line, index) => (
             <line
               key={index}
@@ -371,10 +400,26 @@ const OperationArea = () => {
               y2={currentLine.endY}
               stroke="black"
               strokeWidth="2"
-              markerEnd="url(#arrowhead)" 
+              markerEnd="url(#arrowhead)"
             />
           )}
         </svg>
+        {selectedWindow && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 10,
+              padding: "10px",
+              borderRadius: "8px",
+              backgroundColor: "white",
+            }}
+          >
+            {renderSelectedWindow()}
+          </div>
+        )}
       </ContentArea>
     </DropArea>
   );
