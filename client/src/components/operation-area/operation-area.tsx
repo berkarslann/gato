@@ -29,7 +29,8 @@ interface Window {
   windowType: string;
   xPosition: number;
   yPosition: number;
-  connections: Array<{ id: string; type: "start" | "end" }>;
+  incomingConnections?: string[];
+  outgoingConnections?: string[];
 }
 interface Line {
   startX: number;
@@ -127,7 +128,9 @@ const OperationArea = () => {
   const [linePool, setLinePool] = useState<Line[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
-
+  
+  useEffect(()=>{
+    console.log(windowPool)}, [windowPool]);
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     const scaleAmount = 0.1;
@@ -165,8 +168,7 @@ const OperationArea = () => {
       icon: parsedData.type,
       windowType: parsedData.type,
       xPosition: e.clientX - e.currentTarget.getBoundingClientRect().left,
-      yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top,
-      connections: [],
+      yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top
     };
     setWindowPool((prevWindows) => [...prevWindows, newWindow]);
   };
