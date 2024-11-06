@@ -37,8 +37,8 @@ interface Line {
   startY: number;
   endX: number;
   endY: number;
-  startWindowId: string;
-  endWindowId?: string;
+  startWindow: Window;
+  endWindow: Window;
 }
 const DropArea = styled.div`
   width: 100%;
@@ -150,7 +150,7 @@ const OperationArea = () => {
     );
     setLinePool((prevLines) =>
       prevLines.filter(
-        (line) => line.startWindowId !== id && line.endWindowId !== id
+        (line) => line.startWindow.id !== id && line.endWindow.id !== id
       )
     );
     setTimeout(() => {
@@ -203,13 +203,13 @@ const OperationArea = () => {
 
     setLinePool((prevLines) =>
       prevLines.map((line) => {
-        if (line.startWindowId === selectedWindowId) {
+        if (line.startWindow.id === selectedWindowId) {
           return {
             ...line,
             startX: updatedWindow.xPosition + 80,
             startY: updatedWindow.yPosition + 80,
           };
-        } else if (line.endWindowId === selectedWindowId) {
+        } else if (line.endWindow.id === selectedWindowId) {
           return {
             ...line,
             endX: updatedWindow.xPosition + 80,
@@ -230,12 +230,11 @@ const OperationArea = () => {
   };
 
   const handleConnectStart = (
-    windowId: string,
+    window: Window,
     type: "top" | "bottom",
     e: React.MouseEvent<HTMLDivElement>
   ) => {
     if (!isDrawing) {
-      const window = windowPool.find((w) => w.id === windowId);
       if (!window) return;
 
       const offset = type === "top" ? 0 : 80;
@@ -245,7 +244,8 @@ const OperationArea = () => {
         startY: window.yPosition + offset,
         endX: e.clientX,
         endY: e.clientY,
-        startWindowId: windowId,
+        startWindow: window,
+        endWindow: window,
       };
 
       setCurrentLine(newLine);
@@ -254,20 +254,19 @@ const OperationArea = () => {
     }
   };
 
-  const handleConnectEnd = (windowId: string, type: "top" | "bottom") => {
-    if (isDrawing && currentLine && currentLine.startWindowId !== windowId) {
-      const window = windowPool.find((w) => w.id === windowId);
+  const handleConnectEnd = (window: Window, type: "top" | "bottom") => {
+    if (isDrawing && currentLine && currentLine.startWindow.id !== window.id) {
       if (!window) return;
 
       const updatedLine = {
         ...currentLine,
-        endWindowId: windowId,
+        endWindow: window,
       };
 
       const duplicateLine = linePool.some(
         (line) =>
-          line.startWindowId === updatedLine.startWindowId &&
-          line.endWindowId === updatedLine.endWindowId
+          line.startWindow.id === updatedLine.startWindow.id &&
+          line.endWindow.id === updatedLine.endWindow.id
       );
       console.log(duplicateLine);
       if (duplicateLine) {
@@ -346,13 +345,13 @@ const OperationArea = () => {
             </DeleteWindowButton>
             <ConnectionPoint
               type="top"
-              onMouseEnter={() => handleConnectEnd(window.id, "top")}
+              onMouseEnter={() => handleConnectEnd(window, "top")}
             />
             <ConnectionPoint
               type="bottom"
               onClick={(e) => {
                 e.stopPropagation();
-                handleConnectStart(window.id, "bottom", e);
+                handleConnectStart(window, "bottom", e);
               }}
             />
           </WindowContainer>
