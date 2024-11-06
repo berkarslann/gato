@@ -11,18 +11,22 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "connection")
-public class Connection {
+@Table(name = "line")
+public class Line {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "start_window_id", nullable = false)
-    private Window startWindow;
+    private int startX;
+    private int startY;
+    private int endX;
+    private int endY;
+    
 
     @ManyToOne
-    @JoinColumn(name = "end_window_id", nullable = false)
-    private Window endWindow;
+    @JoinColumn(name = "project_id")
+    private Project project;
+
+
 }
