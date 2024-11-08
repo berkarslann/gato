@@ -8,6 +8,8 @@ import SourceWindow from "../source-window/source-window";
 import ActionWindow from "../action-window/action-window";
 import ComputeWindow from "../compute-window/compute-window";
 import OutputWindow from "../output-window/output-window";
+import { addNewWindow, updateWindow } from "../../service/window-service";
+import { getProjectWindows } from "../../service/project-service";
 
 const colorMapping: Record<string, string> = {
   source: "rgba(255, 165, 0, 0.7)",
@@ -23,12 +25,15 @@ const windowIconMapping: Record<string, JSX.Element> = {
   output: <IoDocumentTextOutline />,
 };
 
-interface Window {
+export interface AppWindow {
   id: string;
   icon: string;
   windowType: string;
   xPosition: number;
   yPosition: number;
+  project: {
+    id: 1;
+  };
   incomingConnections?: string[];
   outgoingConnections?: string[];
 }
@@ -37,8 +42,8 @@ interface Line {
   startY: number;
   endX: number;
   endY: number;
-  startWindow: Window;
-  endWindow: Window;
+  startWindow: AppWindow;
+  endWindow: AppWindow;
 }
 const DropArea = styled.div`
   width: 100%;
@@ -121,16 +126,23 @@ const WindowTypeIcon = styled.button`
 
 const OperationArea = () => {
   const [zoom, setZoom] = useState(1);
-  const [windowPool, setWindowPool] = useState<Window[]>([]);
+  const [windowPool, setWindowPool] = useState<AppWindow[]>([]);
   const [selectedWindowId, setSelectedWindowId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
   const [linePool, setLinePool] = useState<Line[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
-  
-  useEffect(()=>{
-    console.log(windowPool)}, [windowPool]);
+
+  useEffect(() => {
+    const fetchWindows = async () => {
+      const windows = await getProjectWindows(1);
+      setWindowPool(windows || []); 
+    };
+    console.log('windowpool', windowPool);
+    fetchWindows();
+  }, []);
+
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     const scaleAmount = 0.1;
@@ -142,6 +154,7 @@ const OperationArea = () => {
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+ 
   };
 
   const handleDeleteWindow = (id: string) => {
@@ -163,19 +176,27 @@ const OperationArea = () => {
     e.preventDefault();
     const data = e.dataTransfer.getData("text/plain");
     const parsedData = JSON.parse(data);
-    const newWindow: Window = {
+    const newWindow: AppWindow = {
       id: `${parsedData.type}-${Date.now()}`,
       icon: parsedData.type,
       windowType: parsedData.type,
       xPosition: e.clientX - e.currentTarget.getBoundingClientRect().left,
-      yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top
+      yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top,
+      project: {
+        id: 1,
+      },
     };
+
+    addNewWindow(newWindow);
+
     setWindowPool((prevWindows) => [...prevWindows, newWindow]);
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, id: string) => {
     setSelectedWindowId(id);
+    
     setDragging(true);
+    console.log(selectedWindowId)
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -186,20 +207,25 @@ const OperationArea = () => {
         endY: e.clientY - e.currentTarget.getBoundingClientRect().top,
       });
     }
-
+    
     if (!dragging || selectedWindowId === null) return;
-
+    
     const index = windowPool.findIndex((win) => win.id === selectedWindowId);
     if (index === -1) return;
-
+  
     const updatedWindows = [...windowPool];
     const updatedWindow = {
       ...updatedWindows[index],
       xPosition: e.clientX - e.currentTarget.getBoundingClientRect().left,
       yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top,
     };
+    
+
     updatedWindows[index] = updatedWindow;
+    updateWindow(updatedWindow);
     setWindowPool(updatedWindows);
+
+    
 
     setLinePool((prevLines) =>
       prevLines.map((line) => {
@@ -219,6 +245,7 @@ const OperationArea = () => {
         return line;
       })
     );
+    
     setTimeout(() => {
       setCurrentLine(null);
       document.body.style.cursor = "default";
@@ -227,10 +254,12 @@ const OperationArea = () => {
 
   const handleMouseUp = () => {
     setDragging(false);
+
+
   };
 
   const handleConnectStart = (
-    window: Window,
+    window: AppWindow,
     type: "top" | "bottom",
     e: React.MouseEvent<HTMLDivElement>
   ) => {
@@ -254,7 +283,7 @@ const OperationArea = () => {
     }
   };
 
-  const handleConnectEnd = (window: Window, type: "top" | "bottom") => {
+  const handleConnectEnd = (window: AppWindow, type: "top" | "bottom") => {
     if (isDrawing && currentLine && currentLine.startWindow.id !== window.id) {
       if (!window) return;
 
@@ -293,6 +322,8 @@ const OperationArea = () => {
 
   const handleWindowComponent = (windowType: string) => {
     setSelectedWindow(windowType);
+    console.log('bitti4')
+
   };
 
   const renderSelectedWindow = () => {
@@ -321,41 +352,42 @@ const OperationArea = () => {
       onMouseUp={handleMouseUp}
     >
       <ContentArea style={{ transform: `scale(${zoom})` }}>
-        {windowPool.map((window) => (
-          <WindowContainer
-            key={window.id}
-            bgColor={colorMapping[window.icon] || "grey"}
-            style={{
-              left: window.xPosition,
-              top: window.yPosition,
-            }}
-            onMouseDown={(e) => handleMouseDown(e, window.id)}
-            onClick={() => handleWindowComponent(window.windowType)}
-          >
-            <WindowTypeIcon>
-              {windowIconMapping[window.windowType]}
-            </WindowTypeIcon>
-            <DeleteWindowButton
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteWindow(window.id);
+        {Array.isArray(windowPool) &&
+          windowPool.map((window) => (
+            <WindowContainer
+              key={window.id}
+              bgColor={colorMapping[window.icon] || "grey"}
+              style={{
+                left: window.xPosition,
+                top: window.yPosition,
               }}
+              onMouseDown={(e) => handleMouseDown(e, window.id)}
+              onClick={() => handleWindowComponent(window.windowType)}
             >
-              X
-            </DeleteWindowButton>
-            <ConnectionPoint
-              type="top"
-              onMouseEnter={() => handleConnectEnd(window, "top")}
-            />
-            <ConnectionPoint
-              type="bottom"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleConnectStart(window, "bottom", e);
-              }}
-            />
-          </WindowContainer>
-        ))}
+              <WindowTypeIcon>
+                {windowIconMapping[window.windowType]}
+              </WindowTypeIcon>
+              <DeleteWindowButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteWindow(window.id);
+                }}
+              >
+                X
+              </DeleteWindowButton>
+              <ConnectionPoint
+                type="top"
+                onMouseEnter={() => handleConnectEnd(window, "top")}
+              />
+              <ConnectionPoint
+                type="bottom"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleConnectStart(window, "bottom", e);
+                }}
+              />
+            </WindowContainer>
+          ))}
 
         <svg
           style={{
