@@ -2,18 +2,17 @@ package com.gato.backend.controller;
 
 import java.util.List;
 
-
 import org.springframework.web.bind.annotation.*;
 
 import com.gato.backend.model.Project;
 import com.gato.backend.service.IProjectService;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/project")
 public class ProjectController {
 
     private final IProjectService projectService;
-
 
     public ProjectController(IProjectService projectService) {
         this.projectService = projectService;
@@ -33,5 +32,5 @@ public class ProjectController {
     public Project getProjectById(@PathVariable Long projectId) {
         return projectService.getSingleProject(projectId);
     }
-    
+
 }

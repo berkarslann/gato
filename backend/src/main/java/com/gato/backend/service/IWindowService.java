@@ -13,6 +13,9 @@ public interface IWindowService {
 
     Window saveWindow(Window window);
 
+    Window updateWindow(String windowId, Window window);
+
     void deleteWindow(String windowId);
+
 
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 
@@ -22,8 +23,13 @@ public class Window {
     private String id;
     private String icon;
     private String windowType;
-    private int xPosition;
-    private int yPosition;
+    @Column(name = "x_position")
+    @JsonProperty("xPosition")
+    private double xPosition;
+
+    @Column(name = "y_position")
+    @JsonProperty("yPosition")
+    private double yPosition;
 
     @ManyToOne
     @JoinColumn(name = "project_id")
