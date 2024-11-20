@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import WindowManager from "../../components/window-manager/window-manager";
-import Navigation from "../../components/navigation/navigation";
-import OperationArea from "../../components/operation-area/operation-area";
+import WindowManager from "../../components/WindowManager/WindowManager";
+import Navigation from "../../components/Navigation/Navigation";
+import OperationArea from "../../components/OperationArea/OperationArea";
 const Container = styled.div`
   width: 100%;
   height: 100vh;

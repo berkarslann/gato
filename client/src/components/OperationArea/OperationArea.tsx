@@ -4,12 +4,20 @@ import { GrResources } from "react-icons/gr";
 import { GoNorthStar } from "react-icons/go";
 import { AiOutlineBranches } from "react-icons/ai";
 import { IoDocumentTextOutline } from "react-icons/io5";
-import SourceWindow from "../source-window/source-window";
-import ActionWindow from "../action-window/action-window";
-import ComputeWindow from "../compute-window/compute-window";
-import OutputWindow from "../output-window/output-window";
-import { addNewWindow, updateWindow } from "../../service/window-service";
-import { getProjectWindows } from "../../service/project-service";
+import SourceWindow from "../SourceWindow/SourceWindow";
+import ActionWindow from "../ActionWindow.tsx/ActionWindow";
+import ComputeWindow from "../ComputeWindow/ComputeWindow";
+import OutputWindow from "../OutputWindow/OutputWindow";
+import {
+  addNewWindow,
+  getProjectWindows,
+  updateWindow,
+} from "../../service/window-service";
+import {
+  addNewLine,
+  getProjectLines,
+  updateLine,
+} from "../../service/line-service";
 
 const colorMapping: Record<string, string> = {
   source: "rgba(255, 165, 0, 0.7)",
@@ -34,14 +42,18 @@ export interface AppWindow {
   project: {
     id: 1;
   };
-  incomingConnections?: string[];
-  outgoingConnections?: string[];
+  incomingLines?: Line[];
+  outgoingLines?: Line[];
 }
-interface Line {
+export interface Line {
+  id: number;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
+  project: {
+    id: 1;
+  };
   startWindow: AppWindow;
   endWindow: AppWindow;
 }
@@ -135,14 +147,15 @@ const OperationArea = () => {
   const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchWindows = async () => {
-      const windows = await getProjectWindows(1);
-      setWindowPool(windows || []); 
+    const fetchProjectComponents = async () => {
+      const projectWindows = await getProjectWindows(1);
+      const projectLines = await getProjectLines(1);
+      setWindowPool(projectWindows || []);
+      setLinePool(projectLines || []);
     };
-    console.log('windowpool', windowPool);
-    fetchWindows();
-  }, []);
 
+    fetchProjectComponents();
+  }, []);
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     const scaleAmount = 0.1;
@@ -154,7 +167,6 @@ const OperationArea = () => {
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
- 
   };
 
   const handleDeleteWindow = (id: string) => {
@@ -194,9 +206,8 @@ const OperationArea = () => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, id: string) => {
     setSelectedWindowId(id);
-    
+
     setDragging(true);
-    console.log(selectedWindowId)
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -207,35 +218,72 @@ const OperationArea = () => {
         endY: e.clientY - e.currentTarget.getBoundingClientRect().top,
       });
     }
-    
+
     if (!dragging || selectedWindowId === null) return;
-    
+
     const index = windowPool.findIndex((win) => win.id === selectedWindowId);
     if (index === -1) return;
-  
+
     const updatedWindows = [...windowPool];
     const updatedWindow = {
       ...updatedWindows[index],
       xPosition: e.clientX - e.currentTarget.getBoundingClientRect().left,
       yPosition: e.clientY - e.currentTarget.getBoundingClientRect().top,
     };
-    
 
     updatedWindows[index] = updatedWindow;
-    updateWindow(updatedWindow);
-    setWindowPool(updatedWindows);
 
-    
+    setWindowPool(updatedWindows);
+    // const updateIncomingLines = async () => {
+    //   if (updatedWindow.incomingLines) {
+    //     updatedWindow.incomingLines = await Promise.all(
+    //       updatedWindow.incomingLines.map(async (line) => {
+    //         const updatedLine = {
+    //           ...line,
+    //           startX: updatedWindow.xPosition + 80,
+    //           startY: updatedWindow.yPosition + 80,
+    //         };
+    //         await updateLine(updatedLine); 
+    //         return updatedLine; 
+    //       })
+    //     );
+    //   }
+    // };
+
+    // updateIncomingLines().catch((error) => {
+    //   console.error("Error updating lines:", error);
+    // });
+
+    // const updateOutgoingLines = async () => {
+    //   if (updatedWindow.outgoingLines) {
+    //     updatedWindow.outgoingLines = await Promise.all(
+    //       updatedWindow.outgoingLines.map(async (line) => {
+    //         const updatedLine = {
+    //           ...line,
+    //           endX: updatedWindow.xPosition + 80,
+    //           endY: updatedWindow.yPosition,
+    //         };
+    //         await updateLine(updatedLine); 
+    //         return updatedLine; 
+    //       })
+    //     );
+    //   }
+    // };
+
+    // updateOutgoingLines().catch((error) => {
+    //   console.error("Error updating outgoing lines:", error);
+    // });
+
 
     setLinePool((prevLines) =>
       prevLines.map((line) => {
-        if (line.startWindow.id === selectedWindowId) {
+        if (line.startWindow?.id === selectedWindowId) {
           return {
             ...line,
             startX: updatedWindow.xPosition + 80,
             startY: updatedWindow.yPosition + 80,
           };
-        } else if (line.endWindow.id === selectedWindowId) {
+        } else if (line.endWindow?.id === selectedWindowId) {
           return {
             ...line,
             endX: updatedWindow.xPosition + 80,
@@ -245,7 +293,7 @@ const OperationArea = () => {
         return line;
       })
     );
-    
+
     setTimeout(() => {
       setCurrentLine(null);
       document.body.style.cursor = "default";
@@ -253,9 +301,12 @@ const OperationArea = () => {
   };
 
   const handleMouseUp = () => {
+    const updatedWindow = windowPool.find((win) => win.id === selectedWindowId);
+    if (!updatedWindow) return;
+
+    updateWindow(updatedWindow);
+
     setDragging(false);
-
-
   };
 
   const handleConnectStart = (
@@ -269,12 +320,16 @@ const OperationArea = () => {
       const offset = type === "top" ? 0 : 80;
 
       const newLine: Line = {
+        id: Math.random() * 1000000,
         startX: window.xPosition + 80,
         startY: window.yPosition + offset,
         endX: e.clientX,
         endY: e.clientY,
         startWindow: window,
         endWindow: window,
+        project: {
+          id: 1,
+        },
       };
 
       setCurrentLine(newLine);
@@ -294,12 +349,10 @@ const OperationArea = () => {
 
       const duplicateLine = linePool.some(
         (line) =>
-          line.startWindow.id === updatedLine.startWindow.id &&
-          line.endWindow.id === updatedLine.endWindow.id
+          line.startWindow?.id === updatedLine.startWindow.id &&
+          line.endWindow?.id === updatedLine.endWindow.id
       );
-      console.log(duplicateLine);
       if (duplicateLine) {
-        console.log("Duplicate line detected, not adding to linePool.");
         setIsDrawing(false);
         setCurrentLine(null);
         setTimeout(() => {
@@ -311,19 +364,16 @@ const OperationArea = () => {
       }
 
       setCurrentLine(updatedLine);
+      addNewLine(updatedLine);
       setIsDrawing(false);
 
       setLinePool((prevLines) => [...prevLines, updatedLine]);
-      console.log("Line added to linePool:", updatedLine);
-      console.log(linePool);
       setCurrentLine(null);
     }
   };
 
   const handleWindowComponent = (windowType: string) => {
     setSelectedWindow(windowType);
-    console.log('bitti4')
-
   };
 
   const renderSelectedWindow = () => {
