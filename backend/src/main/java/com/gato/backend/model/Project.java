@@ -6,10 +6,8 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
 
-
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Getter
@@ -27,11 +25,13 @@ public class Project {
     private String name;
     private String description;
 
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JsonManagedReference
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("project-window")
     private List<Window> windows;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JsonManagedReference
+    
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("project-line")
     private List<Line> lines;
+    
+
 }

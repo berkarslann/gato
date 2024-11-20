@@ -33,7 +33,7 @@ public class WindowController {
 
     @PostMapping("/new-window")
     public Window addNewWindow(@RequestBody Window window) {
-
+       
         return windowService.saveWindow(window);
     }
 

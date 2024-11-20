@@ -1,9 +1,7 @@
 package com.gato.backend.service.impl;
 
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import com.gato.backend.repository.WindowRepository;
@@ -43,18 +41,15 @@ public class WindowServiceImpl implements IWindowService {
     }
 
     @Override
-    public Window updateWindow(String windowId, Window window) {
-        Optional<Window> existingWindow = windowRepository.findById(windowId);
-        if (existingWindow.isPresent()) {
-            Window updatedWindow = existingWindow.get();
+    public Window updateWindow(String windowId, Window newWindow) {
+        Window existingWindow = windowRepository.findById(windowId)
+                .orElseThrow(() -> new EntityNotFoundException("Window with ID " + windowId + " not found."));
 
-            BeanUtils.copyProperties(window, updatedWindow);
-
-            return windowRepository.save(updatedWindow);
-        } else {
-            throw new EntityNotFoundException("Window with ID " + windowId + " not found.");
-        }
-
+        existingWindow.setIcon(newWindow.getIcon());
+        existingWindow.setXPosition(newWindow.getXPosition());
+        existingWindow.setYPosition(newWindow.getYPosition());
+        existingWindow.setWindowType(newWindow.getWindowType());
+        return windowRepository.save(existingWindow);
     }
 
 }
